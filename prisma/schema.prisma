@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  CLOSED
+}
+
+model UserProfile {
+  id          String     @id @default(cuid())
+  clerkUserId String     @unique
+  name        String?
+  email       String
+  phone       String?
+  role        UserRole   @default(CUSTOMER)
+  addresses   Address[]
+  cartItems   CartItem[]
+  orders      Order[]
+  adminLogs   AdminLog[] @relation("AdminUserLogs")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Address {
+  id             String      @id @default(cuid())
+  userProfileId  String
+  userProfile    UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  fullName       String
+  phone          String
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  pincode        String
+  country        String      @default("India")
+  isDefault      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userProfileId])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id               String         @id @default(cuid())
+  name             String
+  slug             String         @unique
+  description      String
+  shortDescription String
+  price            Decimal        @db.Decimal(10, 2)
+  compareAtPrice   Decimal?       @db.Decimal(10, 2)
+  stock            Int            @default(0)
+  sku              String?        @unique
+  categoryId       String
+  category         Category       @relation(fields: [categoryId], references: [id])
+  isActive         Boolean        @default(true)
+  isFeatured       Boolean        @default(false)
+  images           ProductImage[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive, isFeatured])
+  @@index([name])
+}
+
+model ProductImage {
+  id                 String  @id @default(cuid())
+  productId          String
+  product            Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url                String
+  cloudinaryPublicId String
+  altText            String
+  sortOrder          Int     @default(0)
+
+  @@index([productId, sortOrder])
+}
+
+model CartItem {
+  id            String       @id @default(cuid())
+  userProfileId String?
+  userProfile   UserProfile? @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  sessionId     String?
+  productId     String
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([userProfileId, productId])
+  @@unique([sessionId, productId])
+  @@index([userProfileId])
+  @@index([sessionId])
+}
+
+model Order {
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
+  userProfileId     String?
+  userProfile       UserProfile?  @relation(fields: [userProfileId], references: [id], onDelete: SetNull)
+  customerName      String
+  customerEmail     String
+  customerPhone     String
+  shippingAddressJson Json
+  subtotal          Decimal       @db.Decimal(10, 2)
+  shippingCharge    Decimal       @db.Decimal(10, 2)
+  discount          Decimal       @db.Decimal(10, 2)
+  total             Decimal       @db.Decimal(10, 2)
+  paymentStatus     PaymentStatus @default(PENDING)
+  orderStatus       OrderStatus   @default(PENDING)
+  razorpayOrderId   String?
+  razorpayPaymentId String?       @unique
+  items             OrderItem[]
+  payments          Payment[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([userProfileId])
+  @@index([customerEmail])
+  @@index([customerPhone])
+  @@index([paymentStatus, orderStatus])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String
+  productSku  String?
+  quantity    Int
+  price       Decimal @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  orderId            String
+  order              Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider           String        @default("RAZORPAY")
+  razorpayOrderId    String
+  razorpayPaymentId  String        @unique
+  razorpaySignature  String
+  amount             Decimal       @db.Decimal(10, 2)
+  status             PaymentStatus @default(PENDING)
+  rawResponseJson    Json?
+  createdAt          DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status])
+  @@index([email])
+}
+
+model AdminLog {
+  id           String       @id @default(cuid())
+  adminUserId  String
+  adminUser    UserProfile  @relation("AdminUserLogs", fields: [adminUserId], references: [id], onDelete: Cascade)
+  action       String
+  entityType   String
+  entityId     String?
+  metadataJson Json?
+  createdAt    DateTime     @default(now())
+
+  @@index([adminUserId])
+  @@index([entityType, entityId])
+}

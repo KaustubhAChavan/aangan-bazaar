@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-labelledby="title desc">
+  <title id="title">Aangan Foods menu placeholder</title>
+  <desc id="desc">A warm homemade food placeholder.</desc>
+  <rect width="800" height="800" fill="#fff8ec"/>
+  <circle cx="400" cy="400" r="255" fill="#e8d3b8"/>
+  <circle cx="400" cy="400" r="210" fill="#fff0d1"/>
+  <path d="M244 466c45 62 113 94 203 84 77-8 130-42 159-100 18-36 20-78 8-116H220c-12 45-4 89 24 132z" fill="#2f7d4f"/>
+  <circle cx="314" cy="350" r="48" fill="#d94a2b"/>
+  <circle cx="424" cy="342" r="54" fill="#f4b63f"/>
+  <circle cx="518" cy="378" r="42" fill="#8c3f2f"/>
+  <path d="M225 505h350v42H225z" fill="#2b1b12"/>
+  <path d="M282 254c34 23 67 23 99 0 29-21 61-21 96 0" fill="none" stroke="#2b1b12" stroke-width="24" stroke-linecap="round"/>
+</svg>
